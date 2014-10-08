@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# Quake2 server browser in bash
+# show only servers with people on, based on easy to use API
+#
+# Author: Michael Ole Olsen <gnu@gmx.net> 
+# Release Date: 2014-09-21
+#
+# RELEASED AS FREE SOFTWARE , GPLV3
+# ALL COPYRIGHT RELEASED TO THE FREE SOFTWARE FOUNDATION
+#
+# LICENSE URL: http://www.gnu.org/licenses/gpl-3.0.txt
+#
+# DEPENDS: wget, tr
+#
+
+APIURL=http://rlogin.dk/quake2/popular.api.classed
+
+if [[ $1 == "org" ]]; then
+    # User wants to show only original quake2 maps
+
+    # todo: get a list of ALL original q2 maps one day..
+    grepurl="q2dm|base"
+elif [[ $1 == "all" ]]; then
+    # show all, even tastyspleen, bots servers, anticheat(nonfree)
+    grepurl="."
+    vgrepurl="0xdeadbeef"
+elif [[ $1 == "" ]]; then
+    # Default!
+    # show all servers, but no tastyspleen, bots, anticheat
+
+    grepurl="."
+    vgrepurl="tastyspleen|bots|anticheat"
+elif [[ $1 == "best" ]]; then
+    # User wants to show only original quake2 maps
+
+    # todo: get a list of ALL original q2 maps one day..
+    grepurl="q2dm|base"
+    vgrepurl="tastyspleen|bots|anticheat"
+elif [[ $1 == "version" || $1 == "-version" || $1 == "--version" ]]; then
+    echo "THIS SOFTWARE IS FREE SOFTWARE; LICENSED AS GPLv3, SEE WWW.GNU.ORG FOR MORE INFO"
+    echo "ALL COPYRIGHT RELEASED TO THE FREE SOFTWARE FOUNDATION, (c) 2014 FSF."
+    echo "AUTHOR: MICHAEL OLE OLSEN <gnu@gmx.net>"
+    echo "BUG REPORTS SHOULD BE SENT HERE"
+    exit 0
+elif [[ $1 == "help" || $1 == "-help" || $1 == "--help" ]]; then
+    # Show usage
+    echo -e "Usage:\n\t$(basename "$0") <options>"
+    echo
+    echo -e "Options:"
+    echo -e "\tbest-all\t- " \
+        "no fuzz/bots/tastyspleen servers/anticheat servers"
+    echo -e "\tbest\t\t- " \
+        "if you only want to show original q2maps servers, " \
+        "and no fuzz/bots/tastyspleen servers"
+    echo -e "\torg\t\t- " \
+        "if you only want to show original q2maps servers"
+    echo -e "\tall\t\t- " \
+        "show all servers, even bots/tastyspleen/fake player/bot servers"
+    echo
+    echo "NOTE: non-free servers aka r1ch anticheat servers" \
+        "are disabled by default!"
+    exit 0
+elif [[ ! -z $1 ]]; then
+    echo "Unknown option $1"
+    exit 1
+else
+    # Show all maps... user didn't specify options to program
+    grepurl="."
+    # something impossible..
+    vgrepurl="0xdeadbeef"
+fi
+
+IFS=$' 	'
+cnt=1;
+tmpout=$(mktemp)
+echo -n > "$tmpout"
+while read line;do 
+
+    f1=$(echo "$line"|cut -f1)
+    # players should not have spaces in them:
+    f2=$(echo "$line"|cut -f2|tr -d ' ')
+    f3=$(echo "$line"|cut -f3|tr 'A-Z' 'a-z')
+    f4=$(echo "$line"|cut -f4|tr 'A-Z' 'a-z')
+    f5=$(echo "$line"|cut -f5)
+
+    printf "%-22.22s%2s%-8.8s%2s%-18.18s%2s%-10.10s%2s%-30.30s\n" \
+        "$f1" " " \
+        "$f2" " " \
+        "$f3" " " \
+        "$f4" " " \
+        "$f5" >> "$tmpout" 2>/dev/null
+
+done < <(wget -q "$APIURL" -O -|grep \;| \
+    sort -t $';' -g -k 2,5|tac|sed -r -e 's/;/\t/g'| \
+    grep -E "$grepurl"|grep -i -E -v "$vgrepurl" )
+
+
+cat "$tmpout"
+rm "$tmpout" >/dev/null

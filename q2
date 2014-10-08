@@ -16,11 +16,20 @@
 
 APIURL=http://rlogin.dk/quake2/popular.api.classed
 
+type -P wget tr grep tac sed sort >/dev/null 2>&1 || \
+{
+    echo "Dependency problem: wget(1) and GNU coreutils are needed"\
+       "to run this app."
+    exit 1
+}
+
+
 if [[ $1 == "org" ]]; then
     # User wants to show only original quake2 maps
 
     # todo: get a list of ALL original q2 maps one day..
     grepurl="q2dm|base"
+    vgrepurl="0xdeadbeef"
 elif [[ $1 == "all" ]]; then
     # show all, even tastyspleen, bots servers, anticheat(nonfree)
     grepurl="."
@@ -57,6 +66,10 @@ elif [[ $1 == "help" || $1 == "-help" || $1 == "--help" ]]; then
         "if you only want to show original q2maps servers"
     echo -e "\tall\t\t- " \
         "show all servers, even bots/tastyspleen/fake player/bot servers"
+    echo -e "\t-help\t\t- " \
+        "show help"
+    echo -e "\t-version\t- " \
+        "show program version"
     echo
     echo "NOTE: non-free servers aka r1ch anticheat servers" \
         "are disabled by default!"
@@ -97,4 +110,4 @@ done < <(wget -q "$APIURL" -O -|grep \;| \
 
 
 cat "$tmpout"
-rm "$tmpout" >/dev/null
+rm "$tmpout" >/dev/null 2>&1

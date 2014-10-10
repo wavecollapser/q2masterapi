@@ -14,14 +14,27 @@
 # DEPENDS: wget, tr
 #
 
+# show colors in output? (only used for small terms)
+usecolors=1
+
 APIURL=http://rlogin.dk/quake2/popular.api.classed
 
-type -P wget tr grep tac sed sort >/dev/null 2>&1 || \
+type -P wget tput tr grep tac sed sort >/dev/null 2>&1 || \
 {
     echo "Dependency problem: wget(1) and GNU coreutils are needed"\
        "to run this app."
     exit 1
 }
+
+# check user's term has color support
+case $TERM in
+    xterm*|rxvt*)
+        ;;
+
+    *)
+        # might not have color support, force disable it
+        usecolors=0
+esac
 
 
 if [[ $1 == "org" ]]; then
@@ -84,6 +97,12 @@ else
     vgrepurl="0xdeadbeef"
 fi
 
+# colors
+BLUE=$"\033[0;36m"
+# alternative color: red bg/white fg
+#BLUE=$"\033[41;37m"
+ESCAPE=$"\033[0m"
+
 IFS=$' 	'
 cnt=1;
 tmpout=$(mktemp)
@@ -97,7 +116,18 @@ while read line;do
     f4=$(echo "$line"|cut -f4|tr 'A-Z' 'a-z')
     f5=$(echo "$line"|cut -f5)
 
-    printf "%-22.22s%2s%-8.8s%2s%-18.18s%2s%-10.10s%2s%-30.30s\n" \
+    if (( $(tput cols) > 80 ));then
+        formatStr="%-22.22s%2s%-8.8s%2s%-18.18s%2s%-10.10s%2s%-30.30s\n"
+    else
+        # check term color support
+        if (( $usecolors ));then
+            formatStr="%-22.22s%2s%-8.8s%2s%-18.18s%2s%-10.10s%2s\n\t${BLUE}%-30.30s${ESCAPE}\n"
+        else
+            formatStr="%-22.22s%2s%-8.8s%2s%-18.18s%2s%-10.10s%2s\n\t%-30.30s\n"
+        fi
+    fi
+
+    printf "$formatStr" \
         "$f1" " " \
         "$f2" " " \
         "$f3" " " \
